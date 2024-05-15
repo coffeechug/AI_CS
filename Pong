@@ -1,0 +1,108 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Set up the screen
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Pong")
+
+# Define colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
+# Define constants
+PADDLE_WIDTH = 10
+PADDLE_HEIGHT = 100
+BALL_SIZE = 20
+BALL_SPEED = 5
+PADDLE_SPEED = 5
+
+# Define fonts
+font = pygame.font.Font(None, 36)
+
+# Define classes
+class Paddle(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.Surface((PADDLE_WIDTH, PADDLE_HEIGHT))
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+
+    def update(self, dy):
+        self.rect.y += dy
+        if self.rect.top < 0:
+            self.rect.top = 0
+        elif self.rect.bottom > HEIGHT:
+            self.rect.bottom = HEIGHT
+
+class Ball(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface((BALL_SIZE, BALL_SIZE))
+        self.image.fill(WHITE)
+        pygame.draw.circle(self.image, BLACK, (BALL_SIZE // 2, BALL_SIZE // 2), BALL_SIZE // 2)
+        self.rect = self.image.get_rect()
+        self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        self.speed_x = BALL_SPEED * random.choice([-1, 1])
+        self.speed_y = BALL_SPEED * random.choice([-1, 1])
+
+    def update(self):
+        self.rect.x += self.speed_x
+        self.rect.y += self.speed_y
+
+        # Bounce off walls
+        if self.rect.top < 0 or self.rect.bottom > HEIGHT:
+            self.speed_y *= -1
+        if self.rect.left < 0 or self.rect.right > WIDTH:
+            self.rect.center = (WIDTH // 2, HEIGHT // 2)
+            self.speed_x *= random.choice([-1, 1])
+            self.speed_y *= random.choice([-1, 1])
+
+        # Bounce off paddles
+        if pygame.sprite.spritecollideany(ball, paddles):
+            self.speed_x *= -1
+
+# Create sprites
+paddle1 = Paddle(PADDLE_WIDTH, HEIGHT // 2)
+paddle2 = Paddle(WIDTH - PADDLE_WIDTH, HEIGHT // 2)
+ball = Ball()
+
+paddles = pygame.sprite.Group()
+paddles.add(paddle1, paddle2)
+
+all_sprites = pygame.sprite.Group()
+all_sprites.add(paddle1, paddle2, ball)
+
+# Set up the game loop
+clock = pygame.time.Clock()
+running = True
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_w]:
+        paddle1.update(-PADDLE_SPEED)
+    if keys[pygame.K_s]:
+        paddle1.update(PADDLE_SPEED)
+    if keys[pygame.K_UP]:
+        paddle2.update(-PADDLE_SPEED)
+    if keys[pygame.K_DOWN]:
+        paddle2.update(PADDLE_SPEED)
+
+    ball.update()
+
+    screen.fill(BLACK)
+    pygame.draw.line(screen, WHITE, (WIDTH // 2, 0), (WIDTH // 2, HEIGHT), 2)
+    all_sprites.draw(screen)
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
